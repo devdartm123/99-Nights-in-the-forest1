@@ -35,11 +35,11 @@ local Window = Rayfield:CreateWindow({
       Key = {"AdminKey123"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
    }
 })
-local MainTab = Window:CreateTab("🎯Main🎯", 4483362458) -- Title, Image
-local NameLabel = Tab:CreateLabel("Roblox Name: " .. game.Players.LocalPlayer.Name)
-local IdLabel = Tab:CreateLabel("Roblox ID: " .. game.Players.LocalPlayer.UserId)
-local DaysLabel = Tab:CreateLabel("Days/Nights: Loading...")
-local CultistLabel = Tab:CreateLabel("Cultist Nearby (5 studs): Loading...")
+local MainTab = Window:CreateTab("Main", 4483362458) -- Title, Image
+local NameLabel = MainTab:CreateLabel("Roblox Name: " .. game.Players.LocalPlayer.Name)
+local IdLabel = MainTab:CreateLabel("Roblox ID: " .. game.Players.LocalPlayer.UserId)
+local DaysLabel = MainTab:CreateLabel("Days/Nights: Loading...")
+local CultistLabel = MainTab:CreateLabel("Cultist Nearby (5 studs): Loading...")
 
 -- Function to attempt to get the current days/nights (assumes common storage locations)
 local function getDays()
