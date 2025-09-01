@@ -36,3 +36,114 @@ local Window = Rayfield:CreateWindow({
    }
 })
 local MainTab = Window:CreateTab("🎯Main🎯", 4483362458) -- Title, Image
+local NameLabel = Tab:CreateLabel("Roblox Name: " .. game.Players.LocalPlayer.Name)
+local IdLabel = Tab:CreateLabel("Roblox ID: " .. game.Players.LocalPlayer.UserId)
+local DaysLabel = Tab:CreateLabel("Days/Nights: Loading...")
+local CultistLabel = Tab:CreateLabel("Cultist Nearby (5 studs): Loading...")
+
+-- Function to attempt to get the current days/nights (assumes common storage locations)
+local function getDays()
+    local player = game.Players.LocalPlayer
+    
+    -- Check leaderstats for Nights or Days
+    if player:FindFirstChild("leaderstats") then
+        local stats = player.leaderstats
+        local nights = stats:FindFirstChild("Nights") or stats:FindFirstChild("Days") or stats:FindFirstChild("Night") or stats:FindFirstChild("Day")
+        if nights and nights:IsA("IntValue") or nights:IsA("NumberValue") then
+            return nights.Value
+        end
+    end
+    
+    -- Check ReplicatedStorage for game data
+    local rs = game:GetService("ReplicatedStorage")
+    local gameData = rs:FindFirstChild("GameData") or rs:FindFirstChild("GlobalData")
+    if gameData then
+        local currentDay = gameData:FindFirstChild("CurrentDay") or gameData:FindFirstChild("CurrentNight") or gameData:FindFirstChild("DayCount") or gameData:FindFirstChild("NightCount")
+        if currentDay and (currentDay:IsA("IntValue") or currentDay:IsA("NumberValue")) then
+            return currentDay.Value
+        end
+    end
+    
+    -- Check PlayerGui for any TextLabel containing day/night info
+    local pg = player.PlayerGui
+    for _, gui in ipairs(pg:GetDescendants()) do
+        if gui:IsA("TextLabel") and (string.find(gui.Text:lower(), "day") or string.find(gui.Text:lower(), "night")) then
+            local num = gui.Text:match("%d+")
+            if num then
+                return tonumber(num)
+            end
+        end
+    end
+    
+    return "Not found (check game for stat location)"
+end
+
+-- Function to check if a cultist is nearby (within 5 studs)
+local function isCultistNearby()
+    local char = game.Players.LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        return "X"
+    end
+    
+    local root = char.HumanoidRootPart
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Humanoid") and string.find(obj.Name:lower(), "cultist") then
+            local cultistModel = obj.Parent
+            if cultistModel and cultistModel:FindFirstChild("HumanoidRootPart") then
+                local dist = (cultistModel.HumanoidRootPart.Position - root.Position).Magnitude
+                if dist <= 5 then
+                    return "✔"
+                end
+            end
+        end
+    end
+    return "X"
+end
+
+-- Update the labels every frame for real-time data (use Heartbeat for efficiency)
+game:GetService("RunService").Heartbeat:Connect(function()
+    DaysLabel:Set("Days/Nights: " .. tostring(getDays()))
+    CultistLabel:Set("Cultist Nearby (5 studs): " .. isCultistNearby())
+end)
+
+local UncoverButton = Tab:CreateButton({
+    Name = "Uncover Map (Open Chests)",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then
+            Rayfield:Notify({
+                Title = "Error",
+                Content = "Character not found!",
+                Duration = 5
+            })
+            return
+        end
+
+        local rootPart = character.HumanoidRootPart
+        local openedChests = 0
+
+        -- Search for chests in workspace (assuming they have a ProximityPrompt or are named "Chest")
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and string.find(obj.Name:lower(), "chest") then
+                local prompt = obj:FindFirstChildOfClass("ProximityPrompt")
+                if prompt then
+                    -- Teleport player to chest
+                    rootPart.CFrame = CFrame.new(obj:GetPrimaryPartCFrame().Position + Vector3.new(0, 3, 0))
+                    wait(0.5) -- Wait for proximity to register
+
+                    -- Trigger the ProximityPrompt instantly
+                    fireproximityprompt(prompt)
+                    openedChests = openedChests + 1
+                    wait(0.2) -- Small delay to prevent overwhelming the game
+                end
+            end
+        end
+
+        Rayfield:Notify({
+            Title = "Uncover Map",
+            Content = "Opened " .. openedChests .. " chests!",
+            Duration = 5
+        })
+    end,
+})
